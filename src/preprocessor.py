@@ -17,7 +17,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 import pandas as pd
 
-from src import market_price, storage
+from src import anomaly_signals, market_price, storage
 from src.config import (
     ALL_CHARACTERISTIC_FLAGS,
     APARTMENT_TYPE_LABELS,
@@ -31,11 +31,9 @@ from src.config import (
     FURNISHING_LABELS,
     HOUSE_TYPE_LABELS,
     INCLUDED_PROPERTY_TYPES,
-    INVESTMENT_DISCOUNT_PCT,
     LAND_TYPE_LABELS,
     LEGAL_GROUPS,
     LEGAL_LABELS,
-    MIN_GROUP_SIZE,
     PROCESSED_DATA_DIR,
     PROPERTY_STATUS_LABELS,
     PROPERTY_TYPES,
@@ -61,6 +59,10 @@ MAX_GROSS_YIELD_PCT = 20.0
 # Khung tọa độ TP.HCM (cũ); 1 tọa độ dùng chung cho >= N tên đường khác nhau = tâm phường
 HCM_BBOX = {"lat": (10.3, 11.2), "lon": (106.3, 107.1)}
 APPROX_COORD_MIN_STREETS = 3
+
+# Tin bị loại vì GIÁ phi lý vẫn được giữ trong bộ dữ liệu bài toán 2 (phát hiện bất thường):
+# đó chính là các ca bất thường cần phát hiện; tin Chợ Tốt đánh dấu giá không hợp lệ dùng làm nhãn tham chiếu.
+ANOMALY_KEEP_REASON_PREFIXES = ("gia_bi_chotot_danh_dau_khong_hop_le", "price_ngoai_nguong_", "price_per_m2_ngoai_nguong_")
 
 MISSING_FLAG_COLS = ["rooms", "toilets", "floors", "width", "length", "living_size",
                      "legal_group", "direction", "furnishing", "latitude"]
@@ -367,40 +369,8 @@ class RealEstatePreprocessor:
         return df
 
     # ------------------------------------------------------------------
-    # 4. Nhãn tham chiếu: ngoại lai & cơ hội đầu tư (theo quận x loại BĐS)
+    # 4. Tín hiệu bất thường S2 (Min/Max) & S3 (P10–P90) theo đề bài -> src/anomaly_signals.py
     # ------------------------------------------------------------------
-    def detect_anomalies_and_opportunities(self, df: pd.DataFrame) -> pd.DataFrame:
-        df = df.copy()
-        grp = df.groupby(["district_name", "property_type"])["price_per_m2"]
-        size = grp.transform("size")
-        city = df.groupby("property_type")["price_per_m2"]
-
-        use_local = size >= MIN_GROUP_SIZE
-        stats = {}
-        for name, q in [("q1", 0.25), ("median", 0.5), ("q3", 0.75)]:
-            stats[name] = grp.transform("quantile", q).where(use_local, city.transform("quantile", q))
-        iqr = stats["q3"] - stats["q1"]
-        lower, upper = stats["q1"] - 1.5 * iqr, stats["q3"] + 1.5 * iqr
-
-        df["ref_group"] = np.where(use_local, df["district_name"] + " | " + df["property_type"], "TP.HCM | " + df["property_type"])
-        df["ref_group_size"] = np.where(use_local, size, city.transform("size"))
-        df["ref_median_price_per_m2"] = stats["median"].round(2)
-        df["price_deviation_pct"] = ((df["price_per_m2"] - stats["median"]) / stats["median"] * 100).round(1)
-
-        low, high = df["price_per_m2"] < lower, df["price_per_m2"] > upper
-        df["is_price_outlier"] = (low | high).astype(int)
-        df["outlier_type"] = np.select([low, high], ["Ngoại lai thấp", "Ngoại lai cao"], default="Bình thường")
-
-        risky = (df["char_dinh_quy_hoach"] == 1) | (df["char_khong_tho_cu"] == 1) | (df["char_chua_co_tho_cu"] == 1)
-        df["is_investment_opportunity"] = (
-            (df["price_deviation_pct"] <= INVESTMENT_DISCOUNT_PCT)
-            & (df["has_secure_legal"] == 1)
-            & ~low           # quá rẻ bất thường -> nghi tin ảo, không tính là cơ hội
-            & ~risky
-        ).astype(int)
-
-        logger.info(f"Ngoại lai: {df['is_price_outlier'].sum()}, cơ hội đầu tư (theo luật): {df['is_investment_opportunity'].sum()}")
-        return df
 
     # ------------------------------------------------------------------
     # 5. Lưu
@@ -488,18 +458,29 @@ class RealEstatePreprocessor:
             return df_raw
 
         df_clean, rejected = self.clean_data(df_raw)
-        df_clean = self.fix_data_quality(df_clean)
-        df = self.engineer_features(df_clean)
-        df = self.add_history_features(df)
-        df = self.add_market_price_features(df, raw_ads, charts or [])
-        df = self.detect_anomalies_and_opportunities(df)
-        df = df.drop(columns=["list_time_ms", "orig_list_time_ms", "commercial_type"])
+        keep = rejected["reject_reason"].str.startswith(ANOMALY_KEEP_REASON_PREFIXES)
+        work = pd.concat([df_clean.assign(in_clean_dataset=1, reject_reason=None),
+                          rejected[keep].assign(in_clean_dataset=0)], ignore_index=True)
+        self.stats["n_anomaly_only_rows"] = int(keep.sum())
+
+        work = self.fix_data_quality(work)
+        work = self.engineer_features(work)
+        work = self.add_history_features(work)
+        work = self.add_market_price_features(work, raw_ads, charts or [])
+        work = anomaly_signals.compute_price_signals(work)
+        work = work.drop(columns=["list_time_ms", "orig_list_time_ms", "commercial_type"])
+
+        # Bộ cho bài toán 2: dữ liệu sạch + các tin giá phi lý (cờ in_clean_dataset = 0)
+        work["label_chotot_invalid_price"] = work["is_price_not_valid"].astype(int)
+        work.to_parquet(PROCESSED_DATA_DIR / "nhatot_tphcm_anomaly_base.parquet", index=False)
+
+        df = work[work["in_clean_dataset"] == 1].drop(columns=["in_clean_dataset", "reject_reason"]).reset_index(drop=True)
         self.save_outputs(df, rejected)
         self.export_sample_format(df)
-        self.save_stats(df)
+        self.save_stats(df, work)
         return df
 
-    def save_stats(self, df: pd.DataFrame) -> None:
+    def save_stats(self, df: pd.DataFrame, work: pd.DataFrame) -> None:
         from src.config import REPORTS_DIR
         st = self.stats
         st["n_final"] = len(df)
@@ -508,8 +489,12 @@ class RealEstatePreprocessor:
         st["n_with_chart"] = int(df["bieu_do_gia"].notna().sum()) if "bieu_do_gia" in df else 0
         st["n_with_rent"] = int(df["rent_million_per_month"].notna().sum())
         st["median_gross_yield_pct"] = float(df["gross_rental_yield_pct"].median())
-        st["n_outliers"] = int(df["is_price_outlier"].sum())
-        st["n_opportunities"] = int(df["is_investment_opportunity"].sum())
+        st["n_s2_minmax_clean"] = int(df["s2_minmax"].sum())
+        st["n_s3_outside_p10_p90_clean"] = int((df["s3_distance"] > 0).sum())
+        st["n_anomaly_base"] = len(work)
+        st["n_s2_minmax_anomaly_base"] = int(work["s2_minmax"].sum())
+        st["minmax_source"] = work["minmax_source"].value_counts().to_dict()
+        st["grp_level"] = work["grp_level"].value_counts().to_dict()
         st["orig_list_time_range"] = [str(df["orig_list_time"].min().date()), str(df["orig_list_time"].max().date())]
         st["run_id"] = str(df["run_id"].iloc[0])
         with open(REPORTS_DIR / "preprocessing_stats.json", "w", encoding="utf-8") as f:

@@ -43,7 +43,7 @@ MIN_ACCOUNTS_PER_TYPE = 10
 NUMERIC = [
     "size", "living_size", "total_floor_area_est", "width", "length", "rooms", "toilets", "floors",
     "floor_number", "latitude", "longitude",
-    "area_median_price_per_m2", "area_yoy_change_pct", "area_growth_smoothed_pct",
+    "area_median_price_per_m2", "area_yoy_change_pct", "area_growth_smoothed_pct", "area_chart_min", "area_chart_max",
 ]
 BINARY = [
     "is_frontage", "is_alley_address", "has_secure_legal", "has_project", "txt_mat_tien", "txt_hem_xe_hoi",
@@ -63,8 +63,10 @@ HIGH_CARDINALITY = ["ward_key", "street_key", "project_name"]
 # Không dùng làm biến đầu vào (ghi lại để giải thích trong báo cáo)
 EXCLUDED_LEAKAGE = [
     "price", "price_billion", "price_per_m2", "price_per_m2_living", "chotot_price_per_m2", "price_segment",
-    "ref_median_price_per_m2", "price_deviation_pct", "is_price_outlier", "outlier_type",
-    "is_investment_opportunity", "first_seen_price", "price_change_pct",
+    "first_seen_price", "price_change_pct",
+    # tín hiệu bất thường tính từ giá của chính nhóm (S2/S3) -> chỉ dùng cho bài toán 2
+    "grp_n", "grp_p01", "grp_p10", "grp_p50", "grp_p90", "grp_p99", "s3_distance", "s3_percentile",
+    "minmax_low", "minmax_high", "s2_minmax", "price_side", "label_chotot_invalid_price",
     "rent_million_per_month", "gross_rental_yield_pct",  # nêu kèm giá trong tin, có tương quan trực tiếp với giá
 ]
 EXCLUDED_POST_LISTING = ["days_on_market", "is_removed", "listing_status", "is_bumped", "n_snapshots", "is_sticky"]
@@ -140,6 +142,9 @@ def prepare_property_type(df: pd.DataFrame, ptype: str) -> Dict:
         pd.concat([X.reset_index(drop=True), raw[id_cols].reset_index(drop=True)], axis=1) \
             .to_parquet(out / f"{name}.parquet", index=False)
     joblib.dump(pre, out / "preprocessor.joblib")
+    # Phân chia dùng CHUNG cho sklearn và PySpark (để so sánh 2 môi trường trên cùng tập test)
+    pd.concat([train[["ad_id"]].assign(split="train"), test[["ad_id"]].assign(split="test")]) \
+        .to_csv(out / "split.csv", index=False)
 
     summary = {
         "property_type": ptype,
@@ -149,7 +154,7 @@ def prepare_property_type(df: pd.DataFrame, ptype: str) -> Dict:
         "n_test": len(test),
         "n_accounts_train": int(train["account_id"].nunique()),
         "n_accounts_test": int(test["account_id"].nunique()),
-        "n_features_in": {"numeric": num, "binary": binary, "categorical": cat, "high_cardinality": high},
+        "features_in": {"numeric": num, "binary": binary, "categorical": cat, "high_cardinality": high},
         "n_features_out": X_train.shape[1],
         "feature_names_out": list(X_train.columns),
         "target": "target_log_price = ln(price_billion)",
@@ -172,8 +177,12 @@ def baseline_check(ptype: str) -> Dict:
     train, test = pd.read_parquet(out / "train.parquet"), pd.read_parquet(out / "test.parquet")
     model = HistGradientBoostingRegressor(random_state=RANDOM_STATE).fit(train[feats], train["target_log_price"])
     pred = model.predict(test[feats])
+    y_ty, pred_ty = np.exp(test["target_log_price"]), np.exp(pred)   # đánh giá trên thang gốc (tỷ đồng)
     return {
         "property_type": ptype,
+        "mae_billion": round(float(np.mean(np.abs(pred_ty - y_ty))), 3),
+        "rmse_billion": round(float(np.sqrt(np.mean((pred_ty - y_ty) ** 2))), 3),
+        "r2_price_billion": round(r2_score(y_ty, pred_ty), 3),
         "r2_log_price": round(r2_score(test["target_log_price"], pred), 3),
         "mape_price_pct": round(mean_absolute_percentage_error(np.exp(test["target_log_price"]), np.exp(pred)) * 100, 1),
         "median_ape_pct": round(float(np.median(np.abs(np.exp(pred) / np.exp(test["target_log_price"]) - 1))) * 100, 1),
@@ -194,6 +203,7 @@ def run() -> Dict:
     checks = {p: baseline_check(p) for p in types}
     for c in checks.values():
         logger.info(f"Kiểm tra nhanh [{c['property_type']}]: R²(log giá)={c['r2_log_price']}, "
+                    f"MAE={c['mae_billion']} tỷ, RMSE={c['rmse_billion']} tỷ, "
                     f"MAPE={c['mape_price_pct']}%, sai số trung vị={c['median_ape_pct']}%")
     result = {"splits": {p: {k: v for k, v in s.items() if k != "feature_names_out"} for p, s in summaries.items()},
               "baseline_check": checks}

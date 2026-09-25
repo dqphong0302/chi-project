@@ -8,7 +8,7 @@
       "n_test": 1253,
       "n_accounts_train": 2003,
       "n_accounts_test": 502,
-      "n_features_in": {
+      "features_in": {
         "numeric": [
           "size",
           "total_floor_area_est",
@@ -19,7 +19,9 @@
           "longitude",
           "area_median_price_per_m2",
           "area_yoy_change_pct",
-          "area_growth_smoothed_pct"
+          "area_growth_smoothed_pct",
+          "area_chart_min",
+          "area_chart_max"
         ],
         "binary": [
           "is_alley_address",
@@ -51,7 +53,7 @@
           "project_name"
         ]
       },
-      "n_features_out": 89,
+      "n_features_out": 91,
       "target": "target_log_price = ln(price_billion)",
       "id_columns_not_features": [
         "ad_id",
@@ -72,7 +74,7 @@
       "n_test": 6087,
       "n_accounts_train": 6758,
       "n_accounts_test": 1693,
-      "n_features_in": {
+      "features_in": {
         "numeric": [
           "size",
           "living_size",
@@ -86,7 +88,9 @@
           "longitude",
           "area_median_price_per_m2",
           "area_yoy_change_pct",
-          "area_growth_smoothed_pct"
+          "area_growth_smoothed_pct",
+          "area_chart_min",
+          "area_chart_max"
         ],
         "binary": [
           "is_frontage",
@@ -129,7 +133,7 @@
           "project_name"
         ]
       },
-      "n_features_out": 95,
+      "n_features_out": 97,
       "target": "target_log_price = ln(price_billion)",
       "id_columns_not_features": [
         "ad_id",
@@ -150,7 +154,7 @@
       "n_test": 1120,
       "n_accounts_train": 1955,
       "n_accounts_test": 495,
-      "n_features_in": {
+      "features_in": {
         "numeric": [
           "size",
           "total_floor_area_est",
@@ -160,7 +164,9 @@
           "longitude",
           "area_median_price_per_m2",
           "area_yoy_change_pct",
-          "area_growth_smoothed_pct"
+          "area_growth_smoothed_pct",
+          "area_chart_min",
+          "area_chart_max"
         ],
         "binary": [
           "is_frontage",
@@ -197,7 +203,7 @@
           "project_name"
         ]
       },
-      "n_features_out": 73,
+      "n_features_out": 75,
       "target": "target_log_price = ln(price_billion)",
       "id_columns_not_features": [
         "ad_id",
@@ -214,21 +220,30 @@
   "baseline_check": {
     "can_ho": {
       "property_type": "can_ho",
-      "r2_log_price": 0.811,
-      "mape_price_pct": 17.8,
-      "median_ape_pct": 11.4
+      "mae_billion": 0.905,
+      "rmse_billion": 2.223,
+      "r2_price_billion": 0.724,
+      "r2_log_price": 0.816,
+      "mape_price_pct": 17.6,
+      "median_ape_pct": 11.9
     },
     "nha_o": {
       "property_type": "nha_o",
+      "mae_billion": 1.872,
+      "rmse_billion": 7.227,
+      "r2_price_billion": 0.633,
       "r2_log_price": 0.872,
-      "mape_price_pct": 20.2,
-      "median_ape_pct": 14.4
+      "mape_price_pct": 20.0,
+      "median_ape_pct": 14.3
     },
     "dat": {
       "property_type": "dat",
-      "r2_log_price": 0.795,
-      "mape_price_pct": 45.5,
-      "median_ape_pct": 19.0
+      "mae_billion": 3.251,
+      "rmse_billion": 11.879,
+      "r2_price_billion": 0.628,
+      "r2_log_price": 0.788,
+      "mape_price_pct": 51.2,
+      "median_ape_pct": 19.5
     }
   }
 }

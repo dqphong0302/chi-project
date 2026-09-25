@@ -88,6 +88,8 @@ def main():
     if args.mode in ["all", "preprocess-only", "model-prep"]:
         from src import model_prep
         model_prep.run()
+        from src import anomaly_prep
+        anomaly_prep.run()
         from src import figures
         figures.run()
 

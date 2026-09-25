@@ -143,6 +143,4 @@ CLEANING_THRESHOLDS = {
 # Loại tin trùng "mềm" (cùng 1 BĐS do nhiều môi giới đăng lại)
 DROP_SOFT_DUPLICATES = True
 
-# Phát hiện bất thường: số mẫu tối thiểu của nhóm (quận x loại BĐS), nếu ít hơn thì dùng nhóm toàn TP theo loại BĐS
-MIN_GROUP_SIZE = 20
-INVESTMENT_DISCOUNT_PCT = -15.0  # Rẻ hơn trung vị nhóm >= 15%
+# Tham số tín hiệu bất thường (nhóm tương đồng, khung Min/Max, P10–P90): xem src/anomaly_signals.py

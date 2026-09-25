@@ -1,0 +1,98 @@
+{
+  "can_ho": {
+    "property_type": "can_ho",
+    "n_rows": 6228,
+    "split": {
+      "train": 4956,
+      "test": 1253,
+      "chi_bai_toan_2": 11,
+      "train_outlier_removed": 8
+    },
+    "n_label_chotot_invalid_price": 0,
+    "n_s2_minmax": 68,
+    "n_s3_outside_p10_p90": 1352,
+    "price_side": {
+      "binh_thuong": 4873,
+      "qua_thap": 690,
+      "qua_cao": 665
+    },
+    "s2_rate_on_invalid": null,
+    "s2_rate_on_valid": 0.011,
+    "s3_mean_on_invalid": null,
+    "s3_mean_on_valid": 0.015,
+    "if_feature_columns": [
+      "if_log_price_per_m2",
+      "if_log_size",
+      "if_ratio_to_group_median",
+      "if_ratio_to_area_median",
+      "if_rooms",
+      "if_toilets",
+      "if_rooms_per_100m2"
+    ]
+  },
+  "nha_o": {
+    "property_type": "nha_o",
+    "n_rows": 31567,
+    "split": {
+      "train": 25214,
+      "test": 6087,
+      "chi_bai_toan_2": 177,
+      "train_outlier_removed": 89
+    },
+    "n_label_chotot_invalid_price": 146,
+    "n_s2_minmax": 610,
+    "n_s3_outside_p10_p90": 6594,
+    "price_side": {
+      "binh_thuong": 24932,
+      "qua_cao": 3321,
+      "qua_thap": 3314
+    },
+    "s2_rate_on_invalid": 0.082,
+    "s2_rate_on_valid": 0.019,
+    "s3_mean_on_invalid": 0.043,
+    "s3_mean_on_valid": 0.018,
+    "if_feature_columns": [
+      "if_log_price_per_m2",
+      "if_log_size",
+      "if_ratio_to_group_median",
+      "if_ratio_to_area_median",
+      "if_rooms",
+      "if_toilets",
+      "if_floors",
+      "if_width",
+      "if_length",
+      "if_rooms_per_100m2",
+      "if_living_to_land_ratio"
+    ]
+  },
+  "dat": {
+    "property_type": "dat",
+    "n_rows": 5884,
+    "split": {
+      "train": 4718,
+      "test": 1120,
+      "train_outlier_removed": 45,
+      "chi_bai_toan_2": 1
+    },
+    "n_label_chotot_invalid_price": 0,
+    "n_s2_minmax": 224,
+    "n_s3_outside_p10_p90": 1335,
+    "price_side": {
+      "binh_thuong": 4520,
+      "qua_cao": 716,
+      "qua_thap": 648
+    },
+    "s2_rate_on_invalid": null,
+    "s2_rate_on_valid": 0.038,
+    "s3_mean_on_invalid": null,
+    "s3_mean_on_valid": 0.026,
+    "if_feature_columns": [
+      "if_log_price_per_m2",
+      "if_log_size",
+      "if_ratio_to_group_median",
+      "if_ratio_to_area_median",
+      "if_width",
+      "if_length"
+    ]
+  }
+}

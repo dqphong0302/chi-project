@@ -48,7 +48,7 @@
 \newcommand{\bignum}[2]{\begin{minipage}[t]{0.23\linewidth}\centering{\color{accentdark}\fontsize{26}{28}\selectfont\bfseries #1}\\[0.3em]{\small\color{ink2}#2}\end{minipage}}
 
 \title{Thu thập \& Tiền xử lý dữ liệu\\Bất động sản TP.HCM từ Nhà Tốt}
-\subtitle{Đồ án Data Science: Dự đoán giá \& Đánh giá cơ hội đầu tư}
+\subtitle{Đồ án Data Science: Dự đoán giá, xác định bất thường giá cho nhà ở}
 \author{Họ tên học viên}
 \date{25/09/2026}
 
@@ -83,8 +83,8 @@
     \begin{column}{0.5\linewidth}
       \textbf{Bài toán của đồ án}
       \begin{itemize}
-        \item Dự đoán giá BĐS từ đặc điểm và vị trí
-        \item Phát hiện tin bất thường, đánh giá khu vực / tin nên đầu tư
+        \item Bài toán 1: dự đoán giá nhà (≥ 4 mô hình, cả sklearn và PySpark)
+        \item Bài toán 2: phát hiện tin rao giá quá thấp / quá cao (4 tín hiệu → điểm 0--100)
       \end{itemize}
       \vspace{0.8em}
       \textbf{Phần này đảm nhận}
@@ -129,7 +129,7 @@
     \draw[arr] (m) -| (d);
     \node[outbox, below=1.9cm of c] (o1) {\texttt{rejected\_rows.csv}\\lý do từng dòng};
     \node[outbox, below=1.9cm of d] (o2) {\texttt{clean.csv / .parquet}\\\texttt{by\_district/}, \texttt{dinh\_dang\_mau/}};
-    \node[outbox, below=1.9cm of e] (o3) {\texttt{model\_ready/}\\train / test / encoder};
+    \node[outbox, below=1.9cm of e] (o3) {\texttt{model\_ready/}, \texttt{anomaly\_ready/}\\bài toán 1 / bài toán 2};
     \draw[muted, dashed] (c) -- (o1); \draw[muted, dashed] (d) -- (o2); \draw[muted, dashed] (e) -- (o3);
   \end{tikzpicture}
 
@@ -345,7 +345,7 @@
       \begin{block}{Không dùng làm biến đầu vào}
         \small
         \textbf{Rò rỉ nhãn} (tính từ chính giá):\\
-        đơn giá/m\textsuperscript{2}, độ lệch so với trung vị, cờ ngoại lai / cơ hội đầu tư, giá thuê nêu trong tin\\[0.4em]
+        đơn giá/m\textsuperscript{2}, tín hiệu bất thường S2/S3, giá thuê nêu trong tin\\[0.4em]
         \textbf{Chỉ biết sau khi đăng}:\\
         số ngày đăng, đã gỡ, đã đẩy tin
       \end{block}
@@ -354,9 +354,9 @@
       \begin{tabular}{@{}lrrr@{}}
         \toprule
          & Train & Test & Biến \\ \midrule
-        Căn hộ & 4.956 & 1.253 & 89 \\
-        Nhà ở & 25.214 & 6.087 & 95 \\
-        Đất & 4.718 & 1.120 & 73 \\
+        Căn hộ & 4.956 & 1.253 & 91 \\
+        Nhà ở & 25.214 & 6.087 & 97 \\
+        Đất & 4.718 & 1.120 & 75 \\
         \bottomrule
       \end{tabular}
     \end{column}
@@ -370,12 +370,72 @@
       \includegraphics[width=\linewidth]{07_baseline.png}
     \end{column}
     \begin{column}{0.43\linewidth}
-      \small
+      \footnotesize
       \begin{itemize}
         \item \texttt{HistGradientBoosting} mặc định, \textbf{không tinh chỉnh}, đánh giá trên tập test
-        \item Sai số giá trung vị: 11\% (căn hộ), 14\% (nhà ở), 19\% (đất)
-        \item Đất khó nhất: MAPE 45\% do phân khúc nông nghiệp giá rất thấp
+        \item Sai số giá trung vị: 12\% (căn hộ), 14\% (nhà ở), 20\% (đất)
+        \item Nhà ở, thang tỷ đồng: MAE 1,87 tỷ, RMSE 7,23 tỷ (vài căn rất đắt kéo RMSE lên) $\to$ báo cáo cả 2 thang
+        \item 3 file mẫu: R\textsuperscript{2} 0,85, sai số trung vị 12\%
         \item Mục đích: xác nhận dữ liệu dùng được, \emph{không phải} kết quả mô hình cuối
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ======================================================================
+\begin{frame}{Chuẩn bị cho bài toán 2: phát hiện giá bất thường}
+  \begin{columns}[T]
+    \begin{column}{0.54\linewidth}
+      \footnotesize
+      \begin{itemize}
+        \item \textbf{Giữ lại 177 tin nhà ở có giá phi lý} (bài toán 1 bỏ, nhưng đây là ca cần phát hiện)
+        \item Nhóm tương đồng: \textbf{Phường × loại nhà} (hẻm / mặt phố / biệt thự\dots), $\ge$ 30 tin
+        \item \textbf{S2 Min/Max}: khung sàn / trần từ biểu đồ giá 13 tháng của phường (0,4 × đáy; 2,5 × đỉnh)
+        \item \textbf{S3 P10--P90}: khoảng cách tương đối ra ngoài [P10, P90], chuẩn hóa [0, 1]
+        \item \textbf{S1, S4} cần mô hình: đã có đặc trưng mã hóa sẵn cho mọi dòng, cột \texttt{if\_*}, hàm tính S1 / S4 / điểm tổng hợp
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.44\linewidth}
+      \begin{block}{Nhãn tham chiếu}
+        \small
+        146 tin nhà ở \textbf{Chợ Tốt tự đánh dấu giá không hợp lệ}: giá trung vị chỉ bằng 68\% nhóm $\to$ nhãn cho ``giá quá thấp''.\\[0.3em]
+        S2 bắt 8,2\% số tin này, so với 1,9\% ở tin thường (gấp 4 lần).
+      \end{block}
+      \vspace{0.3em}
+      \footnotesize
+      \begin{tabular}{@{}lr@{}}
+        \toprule
+        Nhà ở (31.567 tin) & Số tin \\ \midrule
+        Vi phạm Min/Max (S2) & 610 \\
+        Ngoài P10--P90 -- quá thấp & 3.314 \\
+        Ngoài P10--P90 -- quá cao & 3.321 \\
+        \bottomrule
+      \end{tabular}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ======================================================================
+\begin{frame}{Hai môi trường \& hai lựa chọn dữ liệu}
+  \begin{columns}[T]
+    \begin{column}{0.48\linewidth}
+      \textbf{sklearn và PySpark dùng chung tập test}
+      \small
+      \begin{itemize}
+        \item \texttt{split.csv}: tin nào thuộc train / test
+        \item sklearn: \texttt{train.parquet} đã mã hóa
+        \item PySpark: \texttt{pyspark\_prep/chuan\_bi\_spark.py} dựng pipeline Spark ML (Imputer, StringIndexer, OneHotEncoder, VectorAssembler) trên cùng tập train
+        \item Mô hình học log(giá) $\to$ đổi về tỷ đồng bằng \texttt{exp()} rồi mới tính MAE / RMSE
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.5\linewidth}
+      \textbf{Nếu chỉ phân tích 3 file mẫu}
+      \small
+      \begin{itemize}
+        \item \texttt{xu\_ly\_du\_lieu\_mau/xu\_ly.py}: chuyển chuỗi sang số (``8,6 tỷ'', ``900 triệu'', ``nhiều hơn 10 phòng''), tách địa chỉ, bỏ số điện thoại
+        \item 8.273 dòng $\to$ \num{7.256} tin sạch (309 dòng rỗng, 26 trùng hoàn toàn, 677 trùng cùng căn)
+        \item Cùng tên cột, cùng đặc trưng và tín hiệu S2/S3 $\to$ \textbf{cùng code mô hình}
+        \item Chia ngẫu nhiên theo quận (bộ mẫu không có mã người đăng)
       \end{itemize}
     \end{column}
   \end{columns}
@@ -392,7 +452,7 @@
         \item Tin đã gỡ $\neq$ đã bán (có thể chỉ hết hạn)
         \item Tọa độ chỉ ở mức đường / phường
         \item Biểu đồ giá phường nhiễu khi ít tin
-        \item Cờ ``cơ hội đầu tư'' theo luật còn thô (20\% số tin)
+        \item Nhãn tham chiếu bài toán 2 chỉ phủ ``giá quá thấp''
         \item Phạm vi TP.HCM cũ, chưa gồm Bình Dương, Bà Rịa - Vũng Tàu
       \end{itemize}
     \end{column}
@@ -401,9 +461,9 @@
       \small
       \begin{itemize}
         \item Cào lại hàng tuần để tích lũy chuỗi thời gian
-        \item Mô hình giá theo từng loại BĐS (GBM, tinh chỉnh)
-        \item Cơ hội đầu tư = \textbf{phần dư mô hình} (giá rao thấp hơn giá dự đoán), kết hợp tăng giá khu vực và tỷ suất cho thuê
-        \item Phát hiện bất thường: Isolation Forest trên phần dư
+        \item Bước 4: $\ge$ 4 mô hình giá ở mỗi môi trường (Linear, Random Forest, XGBoost/LightGBM, GBT\dots), feature importance
+        \item Bài toán 2: tính S1 (Residual-Z) và S4 (Isolation Forest), chọn trọng số w1..w4, ngưỡng top-k\%
+        \item Bước 6: triển khai web (vd. Streamlit)
       \end{itemize}
     \end{column}
   \end{columns}
@@ -415,12 +475,14 @@
   \renewcommand{\arraystretch}{1.15}
   \begin{tabularx}{\linewidth}{@{}>{\ttfamily}p{0.52\linewidth}X@{}}
     \toprule
-    \texttt{data/processed/nhatot\_tphcm\_clean.csv / .parquet} & Dataset sạch, 43.490 dòng, 116 cột \\
+    \texttt{data/processed/nhatot\_tphcm\_clean.csv / .parquet} & Dataset sạch, 43.490 dòng \\
     \texttt{data/processed/by\_district/}, \texttt{by\_property\_type/} & Chia theo 22 quận / 3 loại BĐS \\
     \texttt{data/processed/dinh\_dang\_mau/} & Đúng tên cột của bộ dữ liệu mẫu \\
     \texttt{data/processed/market\_price\_monthly.csv} & Giá khu vực theo tháng (13 tháng) \\
     \texttt{data/processed/rejected\_rows.csv} & Dòng bị loại + lý do \\
-    \texttt{data/model\_ready/<loại>/} & train / test, \texttt{preprocessor.joblib}, \texttt{features.json} \\
+    \texttt{data/model\_ready/<loại>/} & Bài toán 1: train / test, \texttt{split.csv}, \texttt{preprocessor.joblib} \\
+    \texttt{data/anomaly\_ready/<loại>/} & Bài toán 2: S2, S3, \texttt{if\_*}, đặc trưng mã hóa sẵn \\
+    \texttt{data/du\_lieu\_mau/} & Kết quả xử lý riêng 3 file mẫu \\
     \texttt{reports/} & Thống kê theo quận, tỷ lệ thiếu, biểu đồ \\
     \texttt{GHI\_CHU\_TIEN\_XU\_LY.md} & Nhật ký quyết định tiền xử lý \\
     \texttt{BAO\_CAO\_TIEN\_XU\_LY.md} & Danh mục biến \\

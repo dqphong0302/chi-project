@@ -32,7 +32,8 @@ Lệnh này chạy lần lượt các bước sau, tổng cộng khoảng **30 p
 | 1. Cào tin rao 22 quận (đang rao + đã gỡ) | ~17 phút | `data/raw/<run_id>/raw_<quận>.json`, `manifest.json` |
 | 2. Tải biểu đồ giá 13 tháng theo phường | ~8 phút | `data/raw/<run_id>/market_price_charts.json` |
 | 3. Tiền xử lý | ~1 phút | `data/processed/...` |
-| 4. Chia train/test + mã hóa | < 1 phút | `data/model_ready/...` |
+| 4. Bài toán 1: chia train/test + mã hóa | < 1 phút | `data/model_ready/...` |
+| 4b. Bài toán 2: dữ liệu phát hiện giá bất thường | < 1 phút | `data/anomaly_ready/...` |
 | 5. Thống kê + biểu đồ | < 1 phút | `reports/...` |
 
 `<run_id>` là thời điểm bắt đầu cào, ví dụ `20260925_120442`.
@@ -89,7 +90,7 @@ python run_pipeline.py --mode preprocess-only --run-id 20260925_120442
 python run_pipeline.py --mode preprocess-only
 ```
 
-**Chỉ chia lại train/test và vẽ lại biểu đồ:**
+**Chỉ chia lại train/test, tạo lại bộ bài toán 2 và vẽ lại biểu đồ:**
 
 ```bash
 python run_pipeline.py --mode model-prep
@@ -125,11 +126,17 @@ data/
 │   ├── dinh_dang_mau/<quận>.csv      # Đúng tên cột của bộ dữ liệu mẫu (tieu_de, gia_ban, ...)
 │   ├── market_price_monthly.csv      # Giá khu vực theo tháng (13 tháng)
 │   └── rejected_rows.csv             # Dòng bị loại + lý do
-└── model_ready/<loại>/
-    ├── train.parquet, test.parquet   # Đã điền thiếu + mã hóa (dùng ngay cho mô hình)
-    ├── train_raw.parquet, test_raw.parquet   # Chưa xử lý (để thử cách khác)
-    ├── preprocessor.joblib           # Bộ tiền xử lý đã học trên train
-    └── features.json                 # Danh sách biến
+├── model_ready/<loại>/               # Bài toán 1
+│   ├── train.parquet, test.parquet   # Đã điền thiếu + mã hóa (dùng ngay cho mô hình)
+│   ├── train_raw.parquet, test_raw.parquet   # Chưa xử lý (để thử cách khác / dùng cho PySpark)
+│   ├── split.csv                     # Tin nào thuộc train / test (dùng chung sklearn và PySpark)
+│   ├── preprocessor.joblib           # Bộ tiền xử lý đã học trên train
+│   ├── features.json                 # Danh sách biến
+│   └── spark/                        # (sau khi chạy pyspark_prep/chuan_bi_spark.py)
+└── anomaly_ready/<loại>/             # Bài toán 2
+    ├── anomaly.parquet / .csv        # S2, S3, price_side, cột if_*, split, nhãn tham chiếu
+    ├── model_features.parquet        # Đặc trưng mã hóa sẵn cho MỌI dòng (tính S1: model.predict)
+    └── columns.json                  # Mô tả + cách tính S1, S4, điểm tổng hợp
 ```
 
 Ý nghĩa từng cột: xem [BAO_CAO_TIEN_XU_LY.md](BAO_CAO_TIEN_XU_LY.md).

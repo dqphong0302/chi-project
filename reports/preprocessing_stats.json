@@ -18,18 +18,19 @@
   },
   "quality_fixes": {
     "toa_do_ngoai_tphcm": 63,
-    "toa_do_muc_street": 32061,
-    "toa_do_muc_ward": 11366,
+    "toa_do_muc_street": 32198,
+    "toa_do_muc_ward": 11418,
     "toa_do_muc_none": 63,
     "chieu_ngang_phi_ly": 100,
     "chieu_dai_phi_ly": 17,
-    "dien_tich_lech_ngang_x_dai_gan_co": 472,
-    "can_ho_qua_6_phong_ngu": 54,
-    "nha_o_qua_10_tang": 49,
-    "so_wc_vuot_so_phong_ngu_qua_5": 42
+    "dien_tich_lech_ngang_x_dai_gan_co": 476,
+    "can_ho_qua_6_phong_ngu": 56,
+    "nha_o_qua_10_tang": 51,
+    "so_wc_vuot_so_phong_ngu_qua_5": 43
   },
   "n_raw": 47928,
   "n_clean": 43490,
+  "n_anomaly_only_rows": 189,
   "n_final": 43490,
   "by_property_type": {
     "nha_o": 31390,
@@ -43,8 +44,20 @@
   "n_with_chart": 43420,
   "n_with_rent": 2994,
   "median_gross_yield_pct": 3.0,
-  "n_outliers": 1579,
-  "n_opportunities": 8719,
+  "n_s2_minmax_clean": 850,
+  "n_s3_outside_p10_p90_clean": 9174,
+  "n_anomaly_base": 43679,
+  "n_s2_minmax_anomaly_base": 902,
+  "minmax_source": {
+    "bieu_do_gia": 43609,
+    "p01_p99_nhom": 70
+  },
+  "grp_level": {
+    "phuong": 34014,
+    "quan_phan_nhom": 8855,
+    "quan": 751,
+    "toan_tp": 59
+  },
   "orig_list_time_range": [
     "2025-07-10",
     "2026-09-25"

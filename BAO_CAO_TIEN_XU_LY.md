@@ -1,6 +1,6 @@
 # BÁO CÁO THU THẬP & TIỀN XỬ LÝ DỮ LIỆU BẤT ĐỘNG SẢN TP.HCM (NHÀ TỐT / CHỢ TỐT)
 **Đồ án tốt nghiệp Data Science**
-- **Đề tài:** Dự đoán giá (Price Prediction) & Phát hiện bất thường (Anomaly Detection / Đánh giá cơ hội đầu tư)
+- **Đề tài:** Dự đoán giá, xác định bất thường giá cho nhà ở (đề bài: `topic_Price_Prediction_AnomalyDetection.pdf`)
 - **Nguồn dữ liệu:** Nhà Tốt (`nhatot.com`) - Chợ Tốt (`chotot.com`), API công khai `gateway.chotot.com/v1/public/ad-listing`
 - **Phạm vi địa lý:** 22 Quận / Huyện / TP Thủ Đức của TP.HCM **theo địa giới cũ** (trước sáp nhập 01/07/2025; không gồm Bình Dương, Bà Rịa - Vũng Tàu cũ). Dữ liệu giữ cả tên phường cũ (`ward_name`) và phường mới (`ward_name_new`).
 - **Loại BĐS:** Căn hộ/chung cư, Nhà ở, Đất (loại văn phòng/mặt bằng kinh doanh bị loại khỏi dataset sạch).
@@ -14,8 +14,9 @@
 ## 1. Mục tiêu bài toán
 
 1. **Dự đoán giá (Slide 3):** mô hình ước lượng giá dựa trên diện tích, số phòng, số tầng, loại hình, mặt tiền/hẻm, pháp lý, nội thất, vị trí (quận, phường, đường, tọa độ), dự án...
-2. **Phát hiện bất thường & cơ hội đầu tư (Slide 4):** tìm tin có giá thấp hơn đáng kể so với mức tham chiếu nhưng pháp lý an toàn.
-3. **Phạm vi giai đoạn này:** thu thập dữ liệu + chuẩn bị dữ liệu (chưa làm mô hình).
+2. **Phát hiện bất thường giá:** danh sách tin rao giá quá thấp / quá cao so với giá dự đoán và thị trường, bằng điểm tổng hợp 0–100 từ 4 tín hiệu (Residual-Z, Min/Max, P10–P90, Isolation Forest) → ngưỡng top-k%.
+3. **Đối tượng chính của đề là nhà ở** (`property_type = nha_o`); căn hộ và đất là phần mở rộng.
+4. **Phạm vi giai đoạn này:** thu thập dữ liệu + chuẩn bị dữ liệu cho cả 2 bài toán (chưa làm mô hình).
 
 ---
 
@@ -31,7 +32,7 @@ flowchart TD
     C --> D["Làm sạch: ngưỡng riêng theo loại BĐS, loại trùng id + trùng mềm, ghi lý do loại"]
     D --> E["Feature engineering + cờ thiếu dữ liệu (KHÔNG imputation)"]
     S --> E
-    E --> F["Nhãn tham chiếu: IQR theo Quận x Loại BĐS"]
+    E --> F["Tín hiệu bất thường S2 Min/Max + S3 P10–P90 (Phường x Loại nhà)"]
     F --> G["nhatot_tphcm_clean.csv / .parquet"]
     F --> H["by_district/*.csv, by_property_type/*.csv"]
     F --> I["reports/*.csv"]
@@ -43,7 +44,7 @@ flowchart TD
 | Vấn đề | Cách xử lý |
 | :--- | :--- |
 | Mã pháp lý & đặc điểm (`pty_characteristics`) **cùng số nhưng khác nghĩa theo loại BĐS** (vd. mã 6 = "Sổ hồng riêng" với căn hộ nhưng "Giấy tờ viết tay" với nhà/đất) | Ưu tiên nhãn chữ trong `feature_params` của API; bảng mã dự phòng tách theo loại BĐS (`src/config.py`) |
-| Đơn giá/m² không so sánh được giữa căn hộ (m² sàn), nhà (m² đất), đất | Ngưỡng làm sạch, nhóm tham chiếu IQR và báo cáo đều tách theo **Quận x Loại BĐS** |
+| Đơn giá/m² không so sánh được giữa căn hộ (m² sàn), nhà (m² đất), đất | Ngưỡng làm sạch, bộ train/test, nhóm tương đồng cho tín hiệu bất thường và báo cáo đều tách theo loại BĐS |
 | Một BĐS được nhiều môi giới đăng lại | Loại "trùng mềm": cùng loại, phường, giá, diện tích, số phòng, số tầng, tầng căn hộ → giữ tin đăng sớm nhất; số tin trùng lưu ở `n_duplicate_posts` |
 | Điền thiếu trước khi chia train/test gây rò rỉ; điền phòng ngủ cho đất là sai | Giữ NaN, thêm cờ `*_missing`; trường không áp dụng (phòng ngủ của đất, số tầng của căn hộ) để NaN |
 | Tin "đẩy" có `list_time` mới nhưng đăng từ lâu | Dùng `orig_list_time` làm ngày đăng thật, tính `days_on_market` |
@@ -159,17 +160,19 @@ Bảng dài đầy đủ theo tháng: `data/processed/market_price_monthly.csv` 
 
 **Cờ thiếu dữ liệu:** `*_missing` cho `rooms, toilets, floors, width, length, living_size, legal_group, direction, furnishing, latitude`.
 
-**Nhãn tham chiếu (chỉ dùng cho EDA / làm nhãn so sánh, KHÔNG dùng làm biến đầu vào mô hình giá vì được tính từ chính giá bán → rò rỉ dữ liệu):**
+**Tín hiệu phát hiện bất thường (bài toán 2 – KHÔNG dùng làm biến đầu vào mô hình giá, vì tính từ chính giá bán → rò rỉ dữ liệu):**
 
 | Biến | Mô tả |
 | :--- | :--- |
-| `ref_group`, `ref_group_size` | Nhóm tham chiếu: Quận x Loại BĐS (nếu < 20 tin thì dùng toàn TP x Loại BĐS) |
-| `ref_median_price_per_m2` | Đơn giá trung vị của nhóm |
-| `price_deviation_pct` | % lệch so với trung vị nhóm |
-| `is_price_outlier`, `outlier_type` | Ngoài khoảng [Q1 − 1,5·IQR, Q3 + 1,5·IQR] của nhóm |
-| `is_investment_opportunity` | Rẻ hơn trung vị nhóm ≥ 15%, có sổ riêng, không phải ngoại lai thấp, không dính quy hoạch / không có thổ cư |
+| `grp_level`, `grp_key`, `grp_n` | Nhóm tương đồng: Phường × Loại BĐS × Phân nhóm (nhà hẻm / mặt phố…; chung cư / duplex…; thổ cư / nông nghiệp…); nhóm < 30 tin thì lùi lên Quận × Phân nhóm → Quận → Toàn TP |
+| `grp_p10`, `grp_p50`, `grp_p90` (+ `grp_p01`, `grp_p99`) | Phân vị đơn giá (triệu/m²) của nhóm |
+| `s3_distance`, `s3_percentile` | **S3**: khoảng cách tương đối ra ngoài [P10, P90] (0 nếu nằm trong); chuẩn hóa về [0, 1], chặn trần ở phân vị 99 |
+| `minmax_low`, `minmax_high`, `minmax_source` | Khung giá sàn / trần: 0,4 × đáy và 2,5 × đỉnh của biểu đồ giá 13 tháng cùng phường & phân nhóm (`bieu_do_gia`); không có biểu đồ thì dùng P1 / P99 của nhóm |
+| `s2_minmax` | **S2**: 1 nếu đơn giá nằm ngoài khung sàn / trần |
+| `price_side` | `qua_thap` / `qua_cao` / `binh_thuong` |
+| `label_chotot_invalid_price` | 1 nếu Chợ Tốt tự đánh dấu giá không hợp lệ (146 tin nhà ở, giá trung vị bằng 68% nhóm) → nhãn tham chiếu cho "giá quá thấp" |
 
-> Gợi ý cho giai đoạn mô hình: luật "rẻ hơn trung vị" còn thô vì chưa tính khác biệt hẻm/mặt tiền, số tầng, pháp lý... Cách tốt hơn là **so giá rao với giá mô hình dự đoán** (phần dư `giá rao − giá dự đoán`) và xem tin có phần dư âm lớn là cơ hội.
+S1 (Residual-Z) và S4 (Isolation Forest) cần mô hình, tính ở bước modeling. Dữ liệu đã chuẩn bị sẵn trong `data/anomaly_ready/<loại>/`: cột `if_*` cho Isolation Forest, cột `split` giống bài toán 1, và các hàm `residual_z_score`, `isolation_forest_score`, `composite_score` trong `src/anomaly_prep.py`.
 
 ---
 
@@ -181,6 +184,13 @@ Slide trình bày: [slides/tien_xu_ly.pdf](slides/tien_xu_ly.pdf).
 Dữ liệu sẵn sàng cho mô hình nằm ở `data/model_ready/<can_ho|nha_o|dat>/`: `train.parquet` / `test.parquet`
 (đã điền thiếu + mã hóa, fit trên train), `train_raw` / `test_raw` (chưa xử lý), `preprocessor.joblib`, `features.json`.
 Biến mục tiêu `target_log_price = ln(giá tỷ đồng)`; chia 80/20 theo người đăng.
+`split.csv` ghi tin nào thuộc train/test để **sklearn và PySpark dùng chung một cách chia**
+(`pyspark_prep/chuan_bi_spark.py` đọc `*_raw.parquet` và dựng pipeline Spark ML tương đương).
+
+Dữ liệu cho bài toán 2 nằm ở `data/anomaly_ready/<loại>/anomaly.parquet`: gồm dữ liệu sạch cộng các tin bị loại vì giá phi lý
+(`in_clean_dataset = 0`, `split = chi_bai_toan_2`), vì đó chính là các ca bất thường cần phát hiện.
+
+Nếu chỉ phân tích 3 file mẫu của giảng viên: xem [xu_ly_du_lieu_mau/README.md](xu_ly_du_lieu_mau/README.md).
 
 ---
 
@@ -198,7 +208,11 @@ chi-project/
 │       ├── dinh_dang_mau/          # 22 file theo đúng tên cột của bộ dữ liệu mẫu
 │       ├── market_price_monthly.csv # Giá khu vực theo tháng (13 tháng)
 │       └── by_property_type/       # can_ho.csv, nha_o.csv, dat.csv
-├── data/model_ready/<loại>/        # train / test / preprocessor.joblib / features.json
+├── data/model_ready/<loại>/        # Bài toán 1: train / test / split.csv / preprocessor.joblib / features.json
+├── data/anomaly_ready/<loại>/      # Bài toán 2: anomaly.parquet (S2, S3, if_*, nhãn tham chiếu)
+├── data/du_lieu_mau/               # Kết quả xử lý riêng 3 file mẫu (xu_ly_du_lieu_mau/xu_ly.py)
+├── xu_ly_du_lieu_mau/              # Script xử lý riêng 3 file mẫu của giảng viên
+├── pyspark_prep/                   # Tiền xử lý phía PySpark (dùng chung train/test)
 ├── slides/tien_xu_ly.tex, .pdf     # Slide LaTeX (biên dịch: cd slides && tectonic tien_xu_ly.tex)
 ├── GHI_CHU_TIEN_XU_LY.md           # Nhật ký quyết định tiền xử lý
 ├── reports/
@@ -213,6 +227,8 @@ chi-project/
 │   ├── preprocessor.py  # Làm sạch & feature engineering
 │   ├── analyzer.py      # Báo cáo thống kê
 │   ├── model_prep.py    # Chia train/test, điền thiếu, mã hóa cho mô hình
+│   ├── anomaly_signals.py # Tín hiệu S2 (Min/Max) & S3 (P10–P90)
+│   ├── anomaly_prep.py  # Bộ dữ liệu bài toán 2 + hàm S1, S4, điểm tổng hợp
 │   └── figures.py       # Biểu đồ cho báo cáo / slide
 └── run_pipeline.py
 ```

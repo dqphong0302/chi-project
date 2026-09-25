@@ -163,5 +163,9 @@ def chart_features(charts: List[Dict[str, Any]], raw_ads: List[Dict[str, Any]]) 
             "area_12m_growth_pct": round((last - first) / first * 100, 2) if first and last else None,
             # Làm mượt: TB 3 tháng cuối so với TB 3 tháng đầu (giảm nhiễu khi phường ít tin)
             "area_growth_smoothed_pct": _smoothed_growth(series),
+            # Biên độ đơn giá trung vị theo tháng của khu vực (nguồn khung sàn/trần cho tín hiệu Min/Max)
+            "area_chart_min": min(v for v in series if v) if any(series) else None,
+            "area_chart_max": max(v for v in series if v) if any(series) else None,
+            "area_chart_type": f"{chart.get('type_key')}={chart.get('type_id')}",
         })
     return pd.DataFrame(rows).drop_duplicates(subset=["ad_id"])

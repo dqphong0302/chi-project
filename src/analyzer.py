@@ -30,8 +30,8 @@ class DistrictAnalyzer:
                 "Tỷ lệ môi giới (%)": ("is_company_ad", lambda s: s.mean() * 100),
                 "Số ngày đăng TV": ("days_on_market", "median"),
                 "Tỷ lệ tin đã gỡ (%)": ("is_removed", lambda s: s.mean() * 100),
-                "Số cơ hội đầu tư": ("is_investment_opportunity", "sum"),
-                "Số tin ngoại lai": ("is_price_outlier", "sum"),
+                "Vi phạm Min/Max (S2)": ("s2_minmax", "sum"),
+                "Ngoài P10–P90 (S3)": ("s3_distance", lambda s: int((s > 0).sum())),
             })
             .round(2)
             .reset_index()
