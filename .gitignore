@@ -1,0 +1,27 @@
+# Dữ liệu: không đưa lên repo (dung lượng lớn + có thông tin người đăng). Tự tạo lại bằng run_pipeline.py
+data/
+
+# Tài liệu giảng viên cung cấp (không công khai)
+Cung cap HV/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# LaTeX
+slides/*.aux
+slides/*.log
+slides/*.nav
+slides/*.out
+slides/*.snm
+slides/*.toc
+slides/*.synctex.gz
+
+# Hệ điều hành / IDE
+.DS_Store
+.idea/
+.vscode/
+*.jpg

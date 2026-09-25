@@ -1,0 +1,53 @@
+{
+  "rejected": {
+    "trung_ad_id": 0,
+    "loai_bds_khong_thuoc_pham_vi": 521,
+    "gia_bi_chotot_danh_dau_khong_hop_le": 146,
+    "thieu_gia_dien_tich_quan": 437,
+    "price_ngoai_nguong_can_ho": 5,
+    "size_ngoai_nguong_can_ho": 10,
+    "price_per_m2_ngoai_nguong_can_ho": 6,
+    "price_ngoai_nguong_nha_o": 5,
+    "size_ngoai_nguong_nha_o": 2,
+    "price_per_m2_ngoai_nguong_nha_o": 26,
+    "price_ngoai_nguong_dat": 0,
+    "size_ngoai_nguong_dat": 7,
+    "price_per_m2_ngoai_nguong_dat": 1,
+    "dien_tich_su_dung_bat_thuong": 9,
+    "trung_mem_nhieu_tin_cung_bds": 3263
+  },
+  "quality_fixes": {
+    "toa_do_ngoai_tphcm": 63,
+    "toa_do_muc_street": 32061,
+    "toa_do_muc_ward": 11366,
+    "toa_do_muc_none": 63,
+    "chieu_ngang_phi_ly": 100,
+    "chieu_dai_phi_ly": 17,
+    "dien_tich_lech_ngang_x_dai_gan_co": 472,
+    "can_ho_qua_6_phong_ngu": 54,
+    "nha_o_qua_10_tang": 49,
+    "so_wc_vuot_so_phong_ngu_qua_5": 42
+  },
+  "n_raw": 47928,
+  "n_clean": 43490,
+  "n_final": 43490,
+  "by_property_type": {
+    "nha_o": 31390,
+    "can_ho": 6217,
+    "dat": 5883
+  },
+  "by_status": {
+    "active": 21961,
+    "deleted": 21529
+  },
+  "n_with_chart": 43420,
+  "n_with_rent": 2994,
+  "median_gross_yield_pct": 3.0,
+  "n_outliers": 1579,
+  "n_opportunities": 8719,
+  "orig_list_time_range": [
+    "2025-07-10",
+    "2026-09-25"
+  ],
+  "run_id": "20260925_120442"
+}

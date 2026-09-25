@@ -1,0 +1,234 @@
+{
+  "splits": {
+    "can_ho": {
+      "property_type": "can_ho",
+      "n_total": 6217,
+      "n_train": 4956,
+      "n_train_outliers_removed": 8,
+      "n_test": 1253,
+      "n_accounts_train": 2003,
+      "n_accounts_test": 502,
+      "n_features_in": {
+        "numeric": [
+          "size",
+          "total_floor_area_est",
+          "rooms",
+          "toilets",
+          "floor_number",
+          "latitude",
+          "longitude",
+          "area_median_price_per_m2",
+          "area_yoy_change_pct",
+          "area_growth_smoothed_pct"
+        ],
+        "binary": [
+          "is_alley_address",
+          "has_secure_legal",
+          "has_project",
+          "txt_mat_tien",
+          "txt_hem_xe_hoi",
+          "rooms_missing",
+          "toilets_missing",
+          "legal_group_missing",
+          "direction_missing",
+          "furnishing_missing"
+        ],
+        "categorical": [
+          "district_name",
+          "district_type",
+          "apartment_type",
+          "legal_group",
+          "furnishing",
+          "direction",
+          "balcony_direction",
+          "property_status",
+          "geo_precision",
+          "is_main_street"
+        ],
+        "high_cardinality": [
+          "ward_key",
+          "street_key",
+          "project_name"
+        ]
+      },
+      "n_features_out": 89,
+      "target": "target_log_price = ln(price_billion)",
+      "id_columns_not_features": [
+        "ad_id",
+        "account_id",
+        "district_name",
+        "ward_name",
+        "listing_status",
+        "price_billion",
+        "price_per_m2",
+        "target_log_price"
+      ]
+    },
+    "nha_o": {
+      "property_type": "nha_o",
+      "n_total": 31390,
+      "n_train": 25214,
+      "n_train_outliers_removed": 89,
+      "n_test": 6087,
+      "n_accounts_train": 6758,
+      "n_accounts_test": 1693,
+      "n_features_in": {
+        "numeric": [
+          "size",
+          "living_size",
+          "total_floor_area_est",
+          "width",
+          "length",
+          "rooms",
+          "toilets",
+          "floors",
+          "latitude",
+          "longitude",
+          "area_median_price_per_m2",
+          "area_yoy_change_pct",
+          "area_growth_smoothed_pct"
+        ],
+        "binary": [
+          "is_frontage",
+          "is_alley_address",
+          "has_secure_legal",
+          "has_project",
+          "txt_mat_tien",
+          "txt_hem_xe_hoi",
+          "size_dim_mismatch",
+          "char_hem_xe_hoi",
+          "char_no_hau",
+          "char_top_hau",
+          "char_dinh_quy_hoach",
+          "char_chua_hoan_cong",
+          "char_nha_nat",
+          "char_dat_chua_chuyen_tho",
+          "rooms_missing",
+          "toilets_missing",
+          "floors_missing",
+          "width_missing",
+          "length_missing",
+          "living_size_missing",
+          "legal_group_missing",
+          "direction_missing",
+          "furnishing_missing"
+        ],
+        "categorical": [
+          "district_name",
+          "district_type",
+          "house_type",
+          "legal_group",
+          "furnishing",
+          "direction",
+          "geo_precision",
+          "is_main_street"
+        ],
+        "high_cardinality": [
+          "ward_key",
+          "street_key",
+          "project_name"
+        ]
+      },
+      "n_features_out": 95,
+      "target": "target_log_price = ln(price_billion)",
+      "id_columns_not_features": [
+        "ad_id",
+        "account_id",
+        "district_name",
+        "ward_name",
+        "listing_status",
+        "price_billion",
+        "price_per_m2",
+        "target_log_price"
+      ]
+    },
+    "dat": {
+      "property_type": "dat",
+      "n_total": 5883,
+      "n_train": 4718,
+      "n_train_outliers_removed": 45,
+      "n_test": 1120,
+      "n_accounts_train": 1955,
+      "n_accounts_test": 495,
+      "n_features_in": {
+        "numeric": [
+          "size",
+          "total_floor_area_est",
+          "width",
+          "length",
+          "latitude",
+          "longitude",
+          "area_median_price_per_m2",
+          "area_yoy_change_pct",
+          "area_growth_smoothed_pct"
+        ],
+        "binary": [
+          "is_frontage",
+          "is_alley_address",
+          "has_secure_legal",
+          "has_project",
+          "txt_mat_tien",
+          "txt_hem_xe_hoi",
+          "size_dim_mismatch",
+          "char_mat_tien",
+          "char_hem_xe_hoi",
+          "char_no_hau",
+          "char_tho_cu_toan_bo",
+          "char_tho_cu_1_phan",
+          "char_chua_co_tho_cu",
+          "char_khong_tho_cu",
+          "width_missing",
+          "length_missing",
+          "legal_group_missing",
+          "direction_missing"
+        ],
+        "categorical": [
+          "district_name",
+          "district_type",
+          "land_type",
+          "legal_group",
+          "direction",
+          "geo_precision",
+          "is_main_street"
+        ],
+        "high_cardinality": [
+          "ward_key",
+          "street_key",
+          "project_name"
+        ]
+      },
+      "n_features_out": 73,
+      "target": "target_log_price = ln(price_billion)",
+      "id_columns_not_features": [
+        "ad_id",
+        "account_id",
+        "district_name",
+        "ward_name",
+        "listing_status",
+        "price_billion",
+        "price_per_m2",
+        "target_log_price"
+      ]
+    }
+  },
+  "baseline_check": {
+    "can_ho": {
+      "property_type": "can_ho",
+      "r2_log_price": 0.811,
+      "mape_price_pct": 17.8,
+      "median_ape_pct": 11.4
+    },
+    "nha_o": {
+      "property_type": "nha_o",
+      "r2_log_price": 0.872,
+      "mape_price_pct": 20.2,
+      "median_ape_pct": 14.4
+    },
+    "dat": {
+      "property_type": "dat",
+      "r2_log_price": 0.795,
+      "mape_price_pct": 45.5,
+      "median_ape_pct": 19.0
+    }
+  }
+}
