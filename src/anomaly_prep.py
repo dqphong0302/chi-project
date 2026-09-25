@@ -22,7 +22,7 @@ import joblib
 import numpy as np
 import pandas as pd
 
-from src.config import DATA_DIR, INCLUDED_PROPERTY_TYPES, PROCESSED_DATA_DIR, REPORTS_DIR
+from src.config import DATA_DIR, INCLUDED_PROPERTY_TYPES, PARQUET_KWARGS, PROCESSED_DATA_DIR, REPORTS_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +81,7 @@ def prepare_property_type(base: pd.DataFrame, ptype: str) -> Dict:
 
     out = ANOMALY_READY_DIR / ptype
     out.mkdir(parents=True, exist_ok=True)
-    out_df.to_parquet(out / "anomaly.parquet", index=False)
+    out_df.to_parquet(out / "anomaly.parquet", **PARQUET_KWARGS)
     model_features_for_all_rows(df, MODEL_READY_DIR / ptype, out)
     out_df.to_csv(out / "anomaly.csv", index=False, encoding="utf-8-sig")
 
@@ -124,7 +124,7 @@ def model_features_for_all_rows(df: pd.DataFrame, model_dir, out) -> None:
             frame[c] = frame[c].where(frame[c].notna(), None)
     X = pre.transform(frame[cols]).reset_index(drop=True)
     X.insert(0, "ad_id", frame["ad_id"].values)
-    X.to_parquet(out / "model_features.parquet", index=False)
+    X.to_parquet(out / "model_features.parquet", **PARQUET_KWARGS)
 
 
 USAGE = {

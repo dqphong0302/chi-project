@@ -25,7 +25,7 @@ sys.path.insert(0, str(ROOT))
 
 from src import anomaly_signals                                       # noqa: E402
 from src.anomaly_prep import DISPLAY_COLS, SIGNAL_COLS, _if_features  # noqa: E402
-from src.config import CLEANING_THRESHOLDS                            # noqa: E402
+from src.config import CLEANING_THRESHOLDS, PARQUET_KWARGS            # noqa: E402
 from src.market_price import _smoothed_growth                         # noqa: E402
 from src.model_prep import build_preprocessor                         # noqa: E402
 from src.preprocessor import MAX_GROSS_YIELD_PCT, TXT_HEM_XE_HOI, TXT_MAT_TIEN, TXT_RENT  # noqa: E402
@@ -271,10 +271,10 @@ def model_ready(clean_df: pd.DataFrame, out: Path) -> dict:
     d = out / "model_ready"
     d.mkdir(parents=True, exist_ok=True)
     ids = ["ad_id", "district_name", "ward_name", "price_billion", "price_per_m2", "target_log_price"]
-    train.to_parquet(d / "train_raw.parquet", index=False)
-    test.to_parquet(d / "test_raw.parquet", index=False)
+    train.to_parquet(d / "train_raw.parquet", **PARQUET_KWARGS)
+    test.to_parquet(d / "test_raw.parquet", **PARQUET_KWARGS)
     for X, raw, name in [(X_train, train, "train"), (X_test, test, "test")]:
-        pd.concat([X.reset_index(drop=True), raw[ids].reset_index(drop=True)], axis=1).to_parquet(d / f"{name}.parquet", index=False)
+        pd.concat([X.reset_index(drop=True), raw[ids].reset_index(drop=True)], axis=1).to_parquet(d / f"{name}.parquet", **PARQUET_KWARGS)
     pd.concat([train[["ad_id"]].assign(split="train"), test[["ad_id"]].assign(split="test")]).to_csv(d / "split.csv", index=False)
     import joblib
     joblib.dump(pre, d / "preprocessor.joblib")
@@ -317,7 +317,7 @@ def anomaly_ready(work: pd.DataFrame, split: pd.Series, out: Path) -> dict:
     res["target_log_price"] = np.log(res["price_billion"])
     d = out / "anomaly_ready"
     d.mkdir(parents=True, exist_ok=True)
-    res.to_parquet(d / "anomaly.parquet", index=False)
+    res.to_parquet(d / "anomaly.parquet", **PARQUET_KWARGS)
     res.to_csv(d / "anomaly.csv", index=False, encoding="utf-8-sig")
     # Mã hóa mọi dòng bằng bộ tiền xử lý của bài toán 1 -> tính S1 chỉ cần model.predict()
     import joblib
@@ -329,7 +329,7 @@ def anomaly_ready(work: pd.DataFrame, split: pd.Series, out: Path) -> dict:
             frame[c] = frame[c].where(frame[c].notna(), None)
     X = pre.transform(frame[cols]).reset_index(drop=True)
     X.insert(0, "ad_id", frame["ad_id"].values)
-    X.to_parquet(d / "model_features.parquet", index=False)
+    X.to_parquet(d / "model_features.parquet", **PARQUET_KWARGS)
     info = {"n_rows": len(res), "split": res["split"].value_counts().to_dict(),
             "n_s2_minmax": int(res["s2_minmax"].sum()), "n_s3_outside_p10_p90": int((res["s3_distance"] > 0).sum()),
             "price_side": res["price_side"].value_counts().to_dict(),
@@ -366,7 +366,7 @@ def main():
                                       "furnishing", "direction", "bieu_do_gia"]].isna().mean() * 100).round(1).to_dict()
 
     clean_df.to_csv(out / "du_lieu_mau_clean.csv", index=False, encoding="utf-8-sig")
-    clean_df.to_parquet(out / "du_lieu_mau_clean.parquet", index=False)
+    clean_df.to_parquet(out / "du_lieu_mau_clean.parquet", **PARQUET_KWARGS)
     df[df["reject_reason"].notna()].drop(columns=["body"]).to_csv(out / "rejected_rows.csv", index=False, encoding="utf-8-sig")
     summary = (clean_df.groupby("district_name")
                .agg(so_tin=("ad_id", "size"), gia_tv_ty=("price_billion", "median"), dien_tich_tv=("size", "median"),

@@ -130,6 +130,19 @@ nên báo cáo **cả hai thang** và thêm sai số trung vị.
 - `preprocessor.joblib` là của sklearn nên Spark không dùng được. Spark cũng không có Target Encoding ở mọi phiên bản,
   nên phường / đường / dự án được One-Hot (vector thưa).
 - Kết quả lưu ở `data/model_ready/nha_o/spark/{train,test}.parquet` (cột `features`, `label`) và `spark/pipeline_model/`.
+- **Đã chạy thử** (PySpark 4.1.1 + Java 21):
+
+  | Bộ | Train / test | Số chiều vector |
+  | :--- | ---: | ---: |
+  | Nhà ở | 25.214 / 6.087 | 7.799 |
+  | Căn hộ | 4.956 / 1.253 | 2.031 |
+  | Đất | 4.718 / 1.120 | 2.650 |
+  | 3 file mẫu | 5.802 / 1.450 | 879 |
+
+  Tập test Spark trùng khớp `split.csv`. `LinearRegression` mặc định: R² (log giá) 0,75 nhà ở, 0,74 bộ mẫu.
+- Hai lỗi gặp khi chạy thử, đã xử lý:
+  - Spark không đọc được cột thời gian nano giây của pandas → mọi file parquet ghi thời gian ở mức micro giây (`PARQUET_KWARGS` trong `config.py`).
+  - Java ≥ 23 báo lỗi `getSubject is not supported` → phải dùng Java 17 hoặc 21 (đặt `JAVA_HOME`).
 
 ## 6c. Chuẩn bị cho bài toán 2 (`src/anomaly_signals.py`, `src/anomaly_prep.py` → `data/anomaly_ready/<loại>/`)
 

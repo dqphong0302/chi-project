@@ -34,6 +34,7 @@ from src.config import (
     LAND_TYPE_LABELS,
     LEGAL_GROUPS,
     LEGAL_LABELS,
+    PARQUET_KWARGS,
     PROCESSED_DATA_DIR,
     PROPERTY_STATUS_LABELS,
     PROPERTY_TYPES,
@@ -379,7 +380,7 @@ class RealEstatePreprocessor:
         out = {}
         path = PROCESSED_DATA_DIR / "nhatot_tphcm_clean.csv"
         df.to_csv(path, index=False, encoding="utf-8-sig")
-        df.to_parquet(PROCESSED_DATA_DIR / "nhatot_tphcm_clean.parquet", index=False)
+        df.to_parquet(PROCESSED_DATA_DIR / "nhatot_tphcm_clean.parquet", **PARQUET_KWARGS)
         out["all"] = str(path)
 
         rejected.drop(columns=["body"]).to_csv(PROCESSED_DATA_DIR / "rejected_rows.csv", index=False, encoding="utf-8-sig")
@@ -472,7 +473,7 @@ class RealEstatePreprocessor:
 
         # Bộ cho bài toán 2: dữ liệu sạch + các tin giá phi lý (cờ in_clean_dataset = 0)
         work["label_chotot_invalid_price"] = work["is_price_not_valid"].astype(int)
-        work.to_parquet(PROCESSED_DATA_DIR / "nhatot_tphcm_anomaly_base.parquet", index=False)
+        work.to_parquet(PROCESSED_DATA_DIR / "nhatot_tphcm_anomaly_base.parquet", **PARQUET_KWARGS)
 
         df = work[work["in_clean_dataset"] == 1].drop(columns=["in_clean_dataset", "reject_reason"]).reset_index(drop=True)
         self.save_outputs(df, rejected)

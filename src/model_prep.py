@@ -28,7 +28,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler, TargetEncoder
 from sklearn.impute import SimpleImputer
 
-from src.config import DATA_DIR, INCLUDED_PROPERTY_TYPES, PROCESSED_DATA_DIR, REPORTS_DIR
+from src.config import DATA_DIR, INCLUDED_PROPERTY_TYPES, PARQUET_KWARGS, PROCESSED_DATA_DIR, REPORTS_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -136,11 +136,11 @@ def prepare_property_type(df: pd.DataFrame, ptype: str) -> Dict:
     out.mkdir(parents=True, exist_ok=True)
     id_cols = ["ad_id", "account_id", "district_name", "ward_name", "listing_status", "price_billion",
                "price_per_m2", "target_log_price"]
-    train.to_parquet(out / "train_raw.parquet", index=False)  # chưa điền thiếu / mã hóa (để EDA, thử cách khác)
-    test.to_parquet(out / "test_raw.parquet", index=False)
+    train.to_parquet(out / "train_raw.parquet", **PARQUET_KWARGS)  # chưa điền thiếu / mã hóa (để EDA, thử cách khác)
+    test.to_parquet(out / "test_raw.parquet", **PARQUET_KWARGS)
     for X, raw, name in [(X_train, train, "train"), (X_test, test, "test")]:
         pd.concat([X.reset_index(drop=True), raw[id_cols].reset_index(drop=True)], axis=1) \
-            .to_parquet(out / f"{name}.parquet", index=False)
+            .to_parquet(out / f"{name}.parquet", **PARQUET_KWARGS)
     joblib.dump(pre, out / "preprocessor.joblib")
     # Phân chia dùng CHUNG cho sklearn và PySpark (để so sánh 2 môi trường trên cùng tập test)
     pd.concat([train[["ad_id"]].assign(split="train"), test[["ad_id"]].assign(split="test")]) \

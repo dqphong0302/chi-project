@@ -144,3 +144,6 @@ CLEANING_THRESHOLDS = {
 DROP_SOFT_DUPLICATES = True
 
 # Tham số tín hiệu bất thường (nhóm tương đồng, khung Min/Max, P10–P90): xem src/anomaly_signals.py
+
+# Ghi parquet: thời gian ở độ chính xác micro giây để PySpark đọc được (Spark không đọc TIMESTAMP(NANOS) của pandas)
+PARQUET_KWARGS = {"index": False, "coerce_timestamps": "us", "allow_truncated_timestamps": True}

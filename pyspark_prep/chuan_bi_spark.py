@@ -10,7 +10,8 @@ Tiền xử lý phía PySpark – dùng CÙNG tập train/test với sklearn đ�
 Pipeline chỉ fit trên train rồi áp dụng cho test. Lưu ra <thư mục>/spark/{train,test}.parquet (cột features, label)
 và <thư mục>/spark/pipeline_model/.
 
-Cách chạy (cần: pip install pyspark, và Java 17 hoặc 21):
+Cách chạy (cần: pip install pyspark, và Java 17 hoặc 21 – Java >= 23 báo lỗi "getSubject is not supported";
+khi đó cài JDK 21 rồi `export JAVA_HOME=<đường dẫn JDK 21>`):
     python pyspark_prep/chuan_bi_spark.py --dir data/model_ready/nha_o          # dữ liệu cào 22 quận
     python pyspark_prep/chuan_bi_spark.py --dir data/du_lieu_mau/model_ready    # 3 file dữ liệu mẫu
 

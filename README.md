@@ -29,7 +29,7 @@ Chi tiết phần đã xong:
 | Cào dữ liệu 22 quận | ✅ | 47.928 tin thô, 0 trang lỗi |
 | Làm sạch + đặc trưng | ✅ | 43.490 tin sạch (nhà ở 31.390) |
 | Bài toán 1 – train/test sklearn | ✅ | Điền thiếu + mã hóa fit trên train; `split.csv` |
-| Bài toán 1 – tiền xử lý PySpark | ✅ Viết xong | `pyspark_prep/chuan_bi_spark.py` (xem ghi chú chạy thử ở cuối README) |
+| Bài toán 1 – tiền xử lý PySpark | ✅ | `pyspark_prep/chuan_bi_spark.py`; đã chạy thử trên cả 4 bộ (PySpark 4.1.1 + Java 21) |
 | Bài toán 2 – S2 Min/Max, S3 P10–P90 | ✅ | Đã tính cho từng tin |
 | Bài toán 2 – S1 Residual-Z, S4 Isolation Forest | 🟡 Chuẩn bị sẵn | Cần mô hình giá (bước 4); đã có cột `if_*` và các hàm tính |
 | Xử lý riêng 3 file mẫu của giảng viên | ✅ | `xu_ly_du_lieu_mau/`, 7.256 tin sạch |
@@ -162,4 +162,7 @@ chi-project/
 - Các cột `grp_*`, `s2_*`, `s3_*`, `price_side`, `price_per_m2` tính từ chính giá bán: **không dùng làm biến đầu vào** cho mô hình dự đoán giá.
 - Dữ liệu lấy từ API công khai của Chợ Tốt, chỉ phục vụ học tập / nghiên cứu. Crawler có nghỉ giữa các request; vui lòng không giảm thời gian nghỉ.
 - Biên dịch slide: `cd slides && tectonic tien_xu_ly.tex` (hoặc `xelatex`). Slide dùng font Arial.
-- **Trạng thái chạy thử PySpark:** `pyspark_prep/chuan_bi_spark.py` đã viết xong nhưng **chưa chạy thử được trên máy phát triển** (đang tải PySpark). Mục này sẽ được cập nhật sau khi chạy thử.
+- **PySpark đã chạy thử** (PySpark 4.1.1, Java 21): nhà ở 25.214 / 6.087 tin, vector 7.799 chiều; 3 file mẫu 5.802 / 1.450 tin, vector 879 chiều.
+  Tập test bên Spark trùng khớp `split.csv`. Thử nhanh `LinearRegression` mặc định: R² (log giá) 0,75 (nhà ở) và 0,74 (3 file mẫu).
+- **Spark cần Java 17 hoặc 21.** Nếu gặp lỗi `getSubject is not supported` thì máy đang dùng Java ≥ 23: cài JDK 21 (vd. Eclipse Temurin),
+  rồi chạy `export JAVA_HOME=<đường dẫn JDK 21>` trước khi chạy script.
