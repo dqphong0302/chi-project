@@ -186,7 +186,7 @@ def fig_market_trend():
 def fig_baseline(summary):
     chk = summary["baseline_check"]
     fig, ax = plt.subplots(figsize=(6.5, 3.6))
-    types = list(TYPE_LABELS)
+    types = [t for t in TYPE_LABELS if t in chk]
     vals = [chk[t]["r2_log_price"] for t in types]
     ax.bar([TYPE_LABELS[t] for t in types], vals, color=[TYPE_COLORS[t] for t in types], width=0.5)
     for i, t in enumerate(types):
@@ -204,14 +204,18 @@ def run():
     df = pd.read_parquet(PROCESSED_DATA_DIR / "nhatot_tphcm_clean.parquet")
     stats = json.load(open(REPORTS_DIR / "preprocessing_stats.json", encoding="utf-8"))
     summary = json.load(open(REPORTS_DIR / "model_ready_summary.json", encoding="utf-8"))
-    fig_rejections(stats)
-    fig_missing(df)
-    fig_price_distribution(df)
-    fig_district_price(df)
-    fig_growth_yield(df)
-    fig_market_trend()
-    fig_baseline(summary)
-    logger.info(f"Đã lưu biểu đồ vào {FIG_DIR}")
+    figs = [lambda: fig_rejections(stats), lambda: fig_missing(df), lambda: fig_price_distribution(df),
+            lambda: fig_district_price(df), lambda: fig_growth_yield(df), fig_market_trend,
+            lambda: fig_baseline(summary)]
+    failed = 0
+    for draw in figs:
+        try:
+            draw()
+        except Exception as e:  # dữ liệu chạy thử quá ít -> bỏ qua biểu đồ đó, không dừng pipeline
+            failed += 1
+            plt.close("all")
+            logger.warning(f"Bỏ qua 1 biểu đồ (dữ liệu không đủ): {type(e).__name__}: {e}")
+    logger.info(f"Đã lưu {len(figs) - failed}/{len(figs)} biểu đồ vào {FIG_DIR}")
 
 
 if __name__ == "__main__":

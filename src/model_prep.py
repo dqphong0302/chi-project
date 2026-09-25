@@ -37,6 +37,8 @@ RANDOM_STATE = 42
 TEST_SIZE = 0.2
 TRAIN_OUTLIER_IQR_K = 3.0
 MIN_CATEGORY_FREQ = 20
+MIN_ROWS_PER_TYPE = 100      # ít hơn thì bỏ qua loại BĐS đó (vd. khi chạy thử --max-pages)
+MIN_ACCOUNTS_PER_TYPE = 10
 
 NUMERIC = [
     "size", "living_size", "total_floor_area_est", "width", "length", "rooms", "toilets", "floors",
@@ -180,8 +182,16 @@ def baseline_check(ptype: str) -> Dict:
 
 def run() -> Dict:
     df = pd.read_parquet(PROCESSED_DATA_DIR / "nhatot_tphcm_clean.parquet")
-    summaries = {p: prepare_property_type(df, p) for p in INCLUDED_PROPERTY_TYPES}
-    checks = {p: baseline_check(p) for p in INCLUDED_PROPERTY_TYPES}
+    types = []
+    for p in INCLUDED_PROPERTY_TYPES:
+        sub = df[df["property_type"] == p]
+        if len(sub) < MIN_ROWS_PER_TYPE or sub["account_id"].nunique() < MIN_ACCOUNTS_PER_TYPE:
+            logger.warning(f"[{p}] chỉ có {len(sub)} tin / {sub['account_id'].nunique()} người đăng -> "
+                           f"bỏ qua bước chia train/test (cần >= {MIN_ROWS_PER_TYPE} tin, >= {MIN_ACCOUNTS_PER_TYPE} người đăng).")
+        else:
+            types.append(p)
+    summaries = {p: prepare_property_type(df, p) for p in types}
+    checks = {p: baseline_check(p) for p in types}
     for c in checks.values():
         logger.info(f"Kiểm tra nhanh [{c['property_type']}]: R²(log giá)={c['r2_log_price']}, "
                     f"MAPE={c['mape_price_pct']}%, sai số trung vị={c['median_ape_pct']}%")
