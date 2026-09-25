@@ -7,7 +7,7 @@ Phần **thu thập và chuẩn bị dữ liệu** cho đồ án Data Science *"
 - **Phạm vi dữ liệu:** 22 quận/huyện TP.HCM (đề chỉ cấp 3 quận; thu thập thêm quận được cộng điểm) · nhà ở là bộ chính, có thêm căn hộ và đất
 
 > Repo **không chứa dữ liệu**. Dữ liệu cào nặng khoảng 1 GB và có thông tin người đăng; dữ liệu mẫu của giảng viên thì chỉ dùng cho học tập.
-> Tự tải dữ liệu theo **[HUONG_DAN_LAY_DU_LIEU.md](HUONG_DAN_LAY_DU_LIEU.md)** (khoảng 30 phút).
+> Cách chạy tiền xử lý theo 2 hướng (dữ liệu tự cào hoặc 3 file mẫu): **[HUONG_DAN_CHAY_TIEN_XU_LY.md](HUONG_DAN_CHAY_TIEN_XU_LY.md)**.
 
 ## Đã làm tới bước nào
 
@@ -36,7 +36,11 @@ Chi tiết phần đã xong:
 | Kiểm tra nhanh dữ liệu | ✅ | Mô hình mặc định: R² (log giá) nhà ở 0,87; 3 file mẫu 0,85 |
 | Ghi chú, danh mục biến, slide | ✅ | `GHI_CHU_TIEN_XU_LY.md`, `BAO_CAO_TIEN_XU_LY.md`, `slides/tien_xu_ly.pdf` |
 
-## Chạy như thế nào
+## Chạy tiền xử lý – 2 hướng
+
+📘 **Hướng dẫn từng bước đầy đủ (lệnh kiểm tra, kết quả mong đợi, xử lý lỗi): [HUONG_DAN_CHAY_TIEN_XU_LY.md](HUONG_DAN_CHAY_TIEN_XU_LY.md)**
+
+**Bước 0 – Cài đặt (1 lần):**
 
 ```bash
 git clone https://github.com/dqphong0302/chi-project.git
@@ -45,40 +49,28 @@ python3 -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\ac
 pip install -r requirements.txt
 ```
 
-Có 2 lựa chọn, tùy yêu cầu của giảng viên:
+Chọn **một** trong hai hướng, tùy yêu cầu của giảng viên:
 
-**A. Dữ liệu cào 22 quận** (cần Internet, khoảng 30 phút):
+| | Hướng A – Dữ liệu tự cào 22 quận | Hướng B – 3 file mẫu giảng viên cung cấp |
+| :--- | :--- | :--- |
+| Dùng khi | Muốn nhiều dữ liệu, được cộng điểm "thu thập thêm quận khác" | Chỉ cần phân tích đúng 3 file đã cấp |
+| Chuẩn bị | Có Internet | Chép `quan-go-vap.csv`, `quan-binh-thanh.csv`, `quan-phu-nhuan.csv` vào `Cung cap HV/` |
+| Lệnh | `python run_pipeline.py` (~30 phút) | `python xu_ly_du_lieu_mau/xu_ly.py` (vài giây) |
+| Kết quả | 43.490 tin sạch (nhà ở 31.390) | 7.256 tin sạch |
+| Bài toán 1 (sklearn) | `data/model_ready/nha_o/` | `data/du_lieu_mau/model_ready/` |
+| Bài toán 2 | `data/anomaly_ready/nha_o/` | `data/du_lieu_mau/anomaly_ready/` |
 
-```bash
-python run_pipeline.py
-```
+**Hướng A** chạy lần lượt: cào tin → biểu đồ giá → tiền xử lý → train/test (bài toán 1) → bộ bài toán 2 → thống kê và biểu đồ. Mỗi bước chạy riêng được bằng `--mode` (`crawl-only`, `market-price`, `preprocess-only`, `model-prep`, `report-only`); xem hướng dẫn chi tiết.
 
-Lệnh này chạy lần lượt các bước dưới đây. Mỗi bước cũng chạy riêng được bằng `--mode`:
-
-| # | Bước | `--mode` riêng | Đầu ra |
-| :--- | :--- | :--- | :--- |
-| 1 | Cào tin rao 22 quận | `crawl-only` | `data/raw/<run_id>/` |
-| 2 | Tải biểu đồ giá 13 tháng | `market-price` | `data/raw/<run_id>/market_price_charts.json` |
-| 3 | Tiền xử lý (làm sạch, sửa lỗi, đặc trưng, tín hiệu S2/S3) | `preprocess-only` (chạy luôn 4–6) | `data/processed/` |
-| 4 | Bài toán 1: train/test + điền thiếu + mã hóa | `model-prep` (chạy luôn 5–6) | `data/model_ready/<loại>/` |
-| 5 | Bài toán 2: bộ dữ liệu phát hiện bất thường | (cùng bước 4) | `data/anomaly_ready/<loại>/` |
-| 6 | Thống kê + biểu đồ | `report-only` (chỉ in thống kê) | `reports/` |
-
-Sau đó, nếu làm bằng PySpark:
+**Sau tiền xử lý, nếu làm PySpark** (cả 2 hướng; cần Java 17 hoặc 21):
 
 ```bash
-pip install pyspark            # cần Java 17 hoặc 21
-python pyspark_prep/chuan_bi_spark.py --dir data/model_ready/nha_o
+pip install pyspark
+python pyspark_prep/chuan_bi_spark.py --dir data/model_ready/nha_o          # hướng A
+python pyspark_prep/chuan_bi_spark.py --dir data/du_lieu_mau/model_ready    # hướng B
 ```
 
-**B. Chỉ 3 file mẫu của giảng viên** (không cần cào): chép 3 file CSV vào `Cung cap HV/`, rồi chạy
-
-```bash
-python xu_ly_du_lieu_mau/xu_ly.py
-python pyspark_prep/chuan_bi_spark.py --dir data/du_lieu_mau/model_ready   # nếu làm PySpark
-```
-
-Chi tiết: [xu_ly_du_lieu_mau/README.md](xu_ly_du_lieu_mau/README.md).
+Hai hướng cho ra **cùng tên cột và cùng định dạng**, nên code mô hình chỉ cần đổi đường dẫn.
 
 ## Kết quả lần chạy 25/09/2026
 
@@ -152,7 +144,8 @@ chi-project/
 ├── slides/tien_xu_ly.pdf        # Slide báo cáo tiền xử lý
 ├── GHI_CHU_TIEN_XU_LY.md        # Nhật ký quyết định tiền xử lý (làm gì, vì sao, bao nhiêu dòng)
 ├── BAO_CAO_TIEN_XU_LY.md        # Danh mục biến chi tiết
-├── HUONG_DAN_LAY_DU_LIEU.md     # Hướng dẫn tải dữ liệu
+├── HUONG_DAN_CHAY_TIEN_XU_LY.md # Hướng dẫn chạy tiền xử lý theo 2 hướng
+├── HUONG_DAN_LAY_DU_LIEU.md     # Chi tiết cào dữ liệu (mã quận, cào định kỳ)
 └── data/                        # (tạo ra khi chạy, không có trong repo)
 ```
 
